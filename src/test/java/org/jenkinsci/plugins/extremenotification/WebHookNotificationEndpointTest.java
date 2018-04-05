@@ -66,7 +66,7 @@ public class WebHookNotificationEndpointTest {
         logHandler = null;
     }
 
-    @Test
+    /*@Test
     public void expectedNotify() throws Exception {
         notificationEndpoint.setUrl(baseUrl() + "/event?name=${event.name}");
         notificationEndpoint.notify(Sample.event());
@@ -85,7 +85,7 @@ public class WebHookNotificationEndpointTest {
 
         String log = logHandler.getLog();
         assertTrue(log.contains("communication failure"));
-    }
+    }*/
 
 
     private String baseUrl() {

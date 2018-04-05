@@ -4,19 +4,27 @@ import static org.apache.commons.httpclient.util.URIUtil.encodeQuery;
 import hudson.Extension;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.model.Computer;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.httpclient.URIException;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.HttpConnectionParams;
 import org.jenkinsci.plugins.extremenotification.ExtremeNotificationPlugin.Event;
@@ -75,10 +83,12 @@ public class WebHookNotificationEndpoint extends NotificationEndpoint {
 		extra.put("url", interpolate(this.url, event));
 		try {
 			final String localUrl = encodeQuery(interpolate(url, event, extra));
-			
+			URIBuilder uriBuilder = new URIBuilder(localUrl);
+			List<NameValuePair> urlParameters = uriBuilder.getQueryParams();
 			final HttpClient client = new DefaultHttpClient();
 			HttpConnectionParams.setStaleCheckingEnabled(client.getParams(), true);
-			final HttpGet method = new HttpGet(localUrl);
+			final HttpPost method = new HttpPost(uriBuilder.removeQuery().build().toString());
+			method.setEntity(new UrlEncodedFormEntity(urlParameters, "UTF-8"));
 			ScheduledExecutorService singleThreadPool = Executors.newScheduledThreadPool(1);
 			singleThreadPool.schedule(new Runnable() {
 				public void run() {
@@ -96,6 +106,10 @@ public class WebHookNotificationEndpoint extends NotificationEndpoint {
 			}
 		} catch (URIException e) {
 			LOGGER.log(Level.SEVERE, "malformed URL: {}", url);
+		} catch (URISyntaxException e) {
+			LOGGER.log(Level.SEVERE, "malformed URL: {}", url);
+		} catch (UnsupportedEncodingException e) {
+			LOGGER.log(Level.SEVERE, "unsupported Endcoding");
 		}
 	}
 	
@@ -120,7 +134,6 @@ public class WebHookNotificationEndpoint extends NotificationEndpoint {
 			
 			return null;
 		}
-        
     }
 	
 	public static class WebHookEndpointEventCustom implements EndpointEventCustom {
